@@ -15,6 +15,31 @@ const RouletteWheel = ({ participants, onWinnerSelected }) => {
         (_, i) => colorPattern[i % colorPattern.length]
     );
 
+    // ✅ AUTOMATIC FONT SIZE CALCULATION
+    const calculateFontSize = () => {
+        const count = eligibleParticipants.length;
+        if (count <= 8) return 28;
+        if (count <= 15) return 22;
+        if (count <= 25) return 16;
+        if (count <= 40) return 12;
+        if (count <= 60) return 10;
+        return 8;
+    };
+
+    // ✅ CALCULATE TEXT RADIUS BASED ON PARTICIPANT COUNT
+    const calculateTextRadius = () => {
+        const count = eligibleParticipants.length;
+        if (count <= 8) return 180;   // Closer to center for few participants
+        if (count <= 15) return 200;
+        if (count <= 25) return 220;
+        if (count <= 40) return 230;
+        if (count <= 60) return 240;
+        return 250;  // Very close to edge for many participants
+    };
+
+    const fontSize = calculateFontSize();
+    const textRadius = calculateTextRadius();
+
     const spinWheel = async () => {
         if (spinning || eligibleParticipants.length === 0) return;
 
@@ -164,6 +189,12 @@ const RouletteWheel = ({ participants, onWinnerSelected }) => {
                                     : "none",
                             }}
                         >
+                            <defs>
+                                <filter id="textShadow">
+                                    <feDropShadow dx="0" dy="0" stdDeviation="2" floodColor="#000000" floodOpacity="0.8"/>
+                                </filter>
+                            </defs>
+
                             <circle
                                 cx="300"
                                 cy="300"
@@ -188,12 +219,7 @@ const RouletteWheel = ({ participants, onWinnerSelected }) => {
 
                                 const path = `M 300 300 L ${x1} ${y1} A 290 290 0 ${largeArc} 1 ${x2} ${y2} Z`;
 
-                                const midAngle =
-                                    ((i + 0.5) * segmentAngle - 90) *
-                                    (Math.PI / 180);
-                                const textX = 300 + 180 * Math.cos(midAngle);
-                                const textY = 300 + 180 * Math.sin(midAngle);
-                                const rotateDeg = (i + 0.5) * segmentAngle;
+                                const firstName = p.attendee_name.split(' ')[0];
 
                                 return (
                                     <g key={p.id}>
@@ -213,17 +239,19 @@ const RouletteWheel = ({ participants, onWinnerSelected }) => {
                                             strokeWidth="4"
                                         />
 
+                                        {/* ✅ RADIALLY ALIGNED TEXT */}
                                         <text
-                                            x={textX}
-                                            y={textY}
                                             fill="#ffffff"
-                                            fontSize="20"
+                                            fontSize={fontSize}
                                             fontWeight="bold"
+                                            filter="url(#textShadow)"
                                             textAnchor="middle"
-                                            dominantBaseline="middle"
-                                            transform={`rotate(${rotateDeg}, ${textX}, ${textY})`}
+                                            transform={`
+                                                rotate(${i * segmentAngle + segmentAngle / 2}, 300, 300)
+                                                translate(300, ${300 - textRadius})
+                                            `}
                                         >
-                                            {p.attendee_name}
+                                            {firstName}
                                         </text>
                                     </g>
                                 );

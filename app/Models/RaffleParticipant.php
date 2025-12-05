@@ -16,12 +16,15 @@ class RaffleParticipant extends Model
         'email',
         'qr_code_data',
         'is_winner',
-        'scanned_at'
+        'scanned_at',
+        'prize_name',     // ✅ ADD
+        'won_at',         // ✅ ADD
     ];
 
     protected $casts = [
         'is_winner' => 'boolean',
         'scanned_at' => 'datetime',
+        'won_at' => 'datetime',
     ];
 
     public function raffle()

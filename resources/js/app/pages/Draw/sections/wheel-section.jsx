@@ -1,13 +1,28 @@
 import React from 'react';
 import RouletteWheel from '../../../_Components/RouletteWheel';
 
-const WheelSection = ({ participants, onWinnerSelected, loading }) => {
+const WheelSection = ({ participants, onWinnerSelected, loading, onRefresh }) => {
+    
+    // ✅ HANDLE WINNER SELECTED - REFRESH PARTICIPANTS
+    const handleWinnerSelected = (winner) => {
+        if (onWinnerSelected) {
+            onWinnerSelected(winner);
+        }
+        
+        // ✅ Refresh participants list to exclude winner
+        if (onRefresh) {
+            onRefresh();
+        }
+    };
+
     return (
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-2xl p-8">
             <div className="text-center mb-6">
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">Spin to Win!</h2>
                 <p className="text-gray-600">
-                    Participants remaining: <span className="font-bold text-green-600 text-xl">{participants?.length || 0}</span>
+                    Participants remaining: <span className="font-bold text-green-600 text-xl">
+                        {participants?.filter(p => !p.is_winner).length || 0}
+                    </span>
                 </p>
             </div>
             
@@ -29,7 +44,7 @@ const WheelSection = ({ participants, onWinnerSelected, loading }) => {
             ) : (
                 <RouletteWheel 
                     participants={participants}
-                    onWinnerSelected={onWinnerSelected}
+                    onWinnerSelected={handleWinnerSelected}
                 />
             )}
         </div>

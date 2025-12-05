@@ -156,4 +156,29 @@ class ParticipantController extends Controller
             'message' => 'Participant deleted successfully'
         ]);
     }
+
+    /**
+     * ✅ Mark participant as winner
+     */
+    public function markAsWinner(Request $request, RaffleParticipant $participant)
+    {
+        try {
+            $participant->update([
+                'is_winner' => true,
+                'prize_name' => $request->input('prize_name', 'Grand Prize'),
+                'won_at' => $request->input('won_at', now()),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Winner saved successfully!',
+                'data' => $participant
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save winner: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

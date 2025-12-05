@@ -23,31 +23,49 @@ const Page = () => {
         loadData();
     }, [dispatch]);
 
+    // ✅ HANDLE WINNER SELECTED
     const handleWinnerSelected = async (winner) => {
-        const loadingToast = toast.loading('Recording winner...');
-        
+        if (!winner) {
+            await refreshData();
+            return;
+        }
+
         try {
             await dispatch(selectWinner({
                 participant_id: winner.id,
                 prize_name: 'Grand Prize'
             })).unwrap();
             
-            toast.success('🏆 Winner recorded successfully!', {
-                id: loadingToast,
-            });
+            toast.success('🏆 Winner recorded successfully!');
             
-            await dispatch(fetchParticipants()).unwrap();
-            await dispatch(fetchWinners()).unwrap();
+            // Play winner sound
+            const audio = new Audio('/sounds/winner.mp3');
+            audio.play();
+            
+            // Refresh data after winner is recorded
+            await refreshData();
             
         } catch (error) {
             console.error('Error selecting winner:', error);
             
-            const errorMessage = error.message || 'Failed to record winner';
-            toast.error(`❌ ${errorMessage}`, {
-                id: loadingToast,
-            });
+            // ✅ Handle "already won" case silently - just refresh
+            if (error?.message?.includes('already won')) {
+                toast.info('Refreshing participants list...');
+            } else {
+                toast.error(`Failed to record winner: ${error?.message || 'Unknown error'}`);
+            }
             
-            dispatch(fetchParticipants());
+            // Refresh data anyway
+            await refreshData();
+        }
+    };
+
+    const refreshData = async () => {
+        try {
+            await dispatch(fetchParticipants()).unwrap();
+            await dispatch(fetchWinners()).unwrap();
+        } catch (err) {
+            console.error('Failed to refresh data:', err);
         }
     };
 
@@ -55,10 +73,8 @@ const Page = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
-            {/* Header Section */}
             <HeaderSection />
 
-            {/* Main Content */}
             <div className="max-w-7xl mx-auto px-8 py-8">
                 {error && (
                     <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
@@ -72,14 +88,13 @@ const Page = () => {
                 )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Wheel Section */}
                     <WheelSection 
                         participants={eligibleParticipants}
                         onWinnerSelected={handleWinnerSelected}
+                        onRefresh={refreshData}
                         loading={loading}
                     />
 
-                    {/* Winners Section */}
                     <WinnersSection winners={winners} />
                 </div>
             </div>

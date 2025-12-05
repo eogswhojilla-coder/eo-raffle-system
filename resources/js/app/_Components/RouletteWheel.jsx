@@ -15,26 +15,24 @@ const RouletteWheel = ({ participants, onWinnerSelected }) => {
         (_, i) => colorPattern[i % colorPattern.length]
     );
 
-    // ✅ AUTOMATIC FONT SIZE CALCULATION
     const calculateFontSize = () => {
         const count = eligibleParticipants.length;
-        if (count <= 8) return 28;
-        if (count <= 15) return 22;
-        if (count <= 25) return 16;
-        if (count <= 40) return 12;
-        if (count <= 60) return 10;
-        return 8;
+        if (count <= 8) return 26;
+        if (count <= 15) return 20;
+        if (count <= 25) return 14;
+        if (count <= 40) return 11;
+        if (count <= 60) return 9;
+        return 7;
     };
 
-    // ✅ CALCULATE TEXT RADIUS BASED ON PARTICIPANT COUNT
     const calculateTextRadius = () => {
         const count = eligibleParticipants.length;
-        if (count <= 8) return 180;   // Closer to center for few participants
-        if (count <= 15) return 200;
-        if (count <= 25) return 220;
-        if (count <= 40) return 230;
-        if (count <= 60) return 240;
-        return 250;  // Very close to edge for many participants
+        if (count <= 8) return 160;
+        if (count <= 15) return 170;
+        if (count <= 25) return 180;
+        if (count <= 40) return 190;
+        if (count <= 60) return 200;
+        return 210;
     };
 
     const fontSize = calculateFontSize();
@@ -43,7 +41,16 @@ const RouletteWheel = ({ participants, onWinnerSelected }) => {
     const spinWheel = async () => {
         if (spinning || eligibleParticipants.length === 0) return;
 
-        // Confirmation dialog
+        if (eligibleParticipants.length === 0) {
+            Swal.fire({
+                title: 'No Eligible Participants',
+                text: 'All participants have already won!',
+                icon: 'warning',
+                confirmButtonColor: '#3b82f6',
+            });
+            return;
+        }
+
         const result = await Swal.fire({
             title: '🎰 Ready to Spin?',
             text: `${eligibleParticipants.length} participants are eligible for the draw`,
@@ -63,28 +70,33 @@ const RouletteWheel = ({ participants, onWinnerSelected }) => {
 
         toast.loading('Spinning the wheel...', { id: 'spinning' });
 
-        const spins = Math.floor(Math.random() * 5) + 8;
-        const randomDegree = Math.floor(Math.random() * 360);
-        const totalRotation = spins * 360 + randomDegree;
+        // ✅ PRE-SELECT WINNER FROM ELIGIBLE PARTICIPANTS
+        const winnerIndex = Math.floor(Math.random() * eligibleParticipants.length);
+        const selectedWinner = eligibleParticipants[winnerIndex];
+        
+        // Calculate rotation to land on this winner
+        const segmentAngle = 360 / eligibleParticipants.length;
+        const winnerSegmentCenter = winnerIndex * segmentAngle + segmentAngle / 2;
+        const targetAngle = 360 - winnerSegmentCenter + 90;
+        const spins = Math.floor(Math.random() * 3) + 5;
+        const totalRotation = spins * 360 + targetAngle;
 
         setRotation((prev) => prev + totalRotation);
 
         setTimeout(() => {
-            const winnerIndex = Math.floor(
-                Math.random() * eligibleParticipants.length
-            );
-            const selectedWinner = eligibleParticipants[winnerIndex];
-
-            setWinner(selectedWinner);
             setSpinning(false);
+            toast.dismiss('spinning');
             
-            toast.success('Winner selected!', { id: 'spinning' });
+            setWinner(selectedWinner);
             
             setTimeout(() => {
                 setShowModal(true);
             }, 500);
 
-            if (onWinnerSelected) onWinnerSelected(selectedWinner);
+            // ✅ ONLY CALL PARENT CALLBACK - Let parent handle database saving
+            if (onWinnerSelected) {
+                onWinnerSelected(selectedWinner);
+            }
         }, 5000);
     };
 
@@ -94,6 +106,16 @@ const RouletteWheel = ({ participants, onWinnerSelected }) => {
     };
 
     const segmentAngle = 360 / (eligibleParticipants.length || 1);
+
+    if (eligibleParticipants.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center space-y-6 py-20">
+                <div className="text-8xl">🎉</div>
+                <h2 className="text-3xl font-bold text-gray-700">All Prizes Awarded!</h2>
+                <p className="text-xl text-gray-500">All participants have already won.</p>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -216,8 +238,14 @@ const RouletteWheel = ({ participants, onWinnerSelected }) => {
                                 const y2 = 300 + 290 * Math.sin(endAngle);
 
                                 const largeArc = segmentAngle > 180 ? 1 : 0;
-
                                 const path = `M 300 300 L ${x1} ${y1} A 290 290 0 ${largeArc} 1 ${x2} ${y2} Z`;
+
+                                const midAngle = (i + 0.5) * segmentAngle - 90;
+                                const midAngleRad = (midAngle * Math.PI) / 180;
+                                
+                                const textX = 300 + textRadius * Math.cos(midAngleRad);
+                                const textY = 300 + textRadius * Math.sin(midAngleRad);
+                                const textRotation = midAngle + 90;
 
                                 const firstName = p.attendee_name.split(' ')[0];
 
@@ -239,17 +267,16 @@ const RouletteWheel = ({ participants, onWinnerSelected }) => {
                                             strokeWidth="4"
                                         />
 
-                                        {/* ✅ RADIALLY ALIGNED TEXT */}
                                         <text
+                                            x={textX}
+                                            y={textY}
                                             fill="#ffffff"
                                             fontSize={fontSize}
                                             fontWeight="bold"
-                                            filter="url(#textShadow)"
                                             textAnchor="middle"
-                                            transform={`
-                                                rotate(${i * segmentAngle + segmentAngle / 2}, 300, 300)
-                                                translate(300, ${300 - textRadius})
-                                            `}
+                                            dominantBaseline="middle"
+                                            filter="url(#textShadow)"
+                                            transform={`rotate(${textRotation}, ${textX}, ${textY})`}
                                         >
                                             {firstName}
                                         </text>

@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RaffleController;
 use App\Http\Controllers\ParticipantController;
 use App\Http\Controllers\WinnerController;
+use App\Http\Controllers\RaffleParticipantController;
 
 // Raffle Routes
 Route::apiResource('raffles', RaffleController::class);
@@ -24,3 +25,9 @@ Route::post('participants/scan', [ParticipantController::class, 'registerPartici
 Route::get('winners', [WinnerController::class, 'index']);
 Route::post('winners', [WinnerController::class, 'store']);
 Route::get('raffles/{raffleId}/winners', [WinnerController::class, 'getRaffleWinners']);
+
+// Mark participant as winner
+Route::post('/participants/{participant}/mark-winner', [ParticipantController::class, 'markAsWinner']);
+
+// ✅ ADD THIS ROUTE - Use RaffleParticipant model
+Route::post('/raffle-participants/{raffleParticipant}/mark-winner', [RaffleParticipantController::class, 'markAsWinner']);
